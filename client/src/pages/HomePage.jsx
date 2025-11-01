@@ -4,19 +4,23 @@ import ChatContainer from '../Components/ChatContainer'
 import RightSidebar from '../Components/RightSidebar'
 
 const HomePage = () => {
-    const [selectedUser,setSelectedUser]= useState(false)
+  const [selectedUser, setSelectedUser] = useState(false)
+
   return (
-    <div className='border w-full h-screen sm:px-[15%] sm:py-[15%]'>
-    <div className={`backdrop-blur-xl border-2 border-gray-600 rounded-2xl
-  overflow-hidden h-full grid grid-cols-1 relative
-  ${selectedUser 
-    ? 'md:grid-cols-[1fr_1.5fr_1fr] xl:grid-cols-[1fr_2fr_1fr]' 
-    : 'md:grid-cols-2'
-  }`}>
-        <Sidebar selectedUser={selectedUser} setSelectedUser={setSelectedUser}/>
-        <ChatContainer selectedUser={selectedUser} setSelectedUser={setSelectedUser}/>
-        <RightSidebar selectedUser={selectedUser} setSelectedUser={setSelectedUser}/>
-    </div>
+    <div className="w-full min-h-screen flex items-center justify-center bg-[#0B0C10]">
+      <div
+        className={`backdrop-blur-xl border-2 border-gray-600 rounded-2xl 
+        overflow-hidden relative grid 
+        w-[95%] h-[90vh] sm:w-[85%] sm:h-[80vh] lg:w-[75%] lg:h-[85vh]
+        ${selectedUser
+          ? 'md:grid-cols-[1fr_1.5fr_1fr] xl:grid-cols-[1fr_2fr_1fr]'
+          : 'md:grid-cols-2'
+        }`}
+      >
+        <Sidebar selectedUser={selectedUser} setSelectedUser={setSelectedUser} />
+        <ChatContainer selectedUser={selectedUser} setSelectedUser={setSelectedUser} />
+        <RightSidebar selectedUser={selectedUser} setSelectedUser={setSelectedUser} />
+      </div>
     </div>
   )
 }
