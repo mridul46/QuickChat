@@ -52,7 +52,7 @@ const getMessages= asyncHandler(async(req,res)=>{
         messages
     })
 })
-
+ 
 
 //api to mark message as seen using message id
 const markMessageAsSeen= asyncHandler(async(req,res)=>{

@@ -4,8 +4,8 @@ import User from '../models/User.models.js';
 
 
 export const protectRoute= asyncHandler(async(req,res,next)=>{
-   const token = req.cookies?.accessToken || req.header("Authorization")?.replace("Bearer ", "");
-    const decode= jwt.verify(token,process.env.JWT_SECRET)
+  const token = req.cookies?.accessToken || req.header("Authorization")?.replace("Bearer ", "").trim();
+    const decode = jwt.verify(token, process.env.JWT_SECRET); 
     const user= await User.findById(decode.userId).select("-password")
     if(!user){
         return res.json(
