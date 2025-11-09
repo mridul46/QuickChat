@@ -3,7 +3,7 @@ import toast from "react-hot-toast";
 import assets from '../assets/assets';
 import { formatMessageTime } from '../lib/utils';
 import { ChatContext } from '../context/ChatContext';
-import { AuthContext } from '../context/authContext';
+import { AuthContext } from '../context/AuthContext';
 
 const ChatContainer = () => {
   const { message, selectedUser, setSelectedUser, sendMessage, getMessages } = useContext(ChatContext);
