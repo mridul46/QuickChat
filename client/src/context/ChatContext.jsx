@@ -14,12 +14,12 @@ export const ChatProvider = ({ children }) => {
   const getUsers = async () => {
     try {
       const { data } = await axios.get("/api/v1/messages/users");
-      console.log("API Response:", data);
+    //  console.log("API Response:", data);
       if (data.success) {
         setUsers(data.users || []);
         setUnseenMessages(data.unseenMessages || {});
       } else{
-        console.error("API did not return success:", data);
+       // console.error("API did not return success:", data);
       }
     } catch (error) {
       toast.error(error.message);
@@ -35,21 +35,7 @@ export const ChatProvider = ({ children }) => {
     }
   };
 
-  // const sendMessage = async (messageData) => {
-  //   try {
-  //     const { data } = await axios.post(
-  //       `/api/v1/messages/send/${selectedUser._id}`,
-  //       messageData
-  //     );
-  //     if (data.success) {
-  //       setMessage((prev) => [...prev, data.newMessage]);
-  //     } else {
-  //       toast.error(data.message);
-  //     }
-  //   } catch (error) {
-  //     toast.error(error.message);
-  //   }
-  // };
+
 
   const sendMessage = async (messageData) => {
   if (!selectedUser?._id) {

@@ -4,7 +4,7 @@ import axios from "axios";
 import toast from "react-hot-toast";
 import { io } from "socket.io-client";
 
-const backendUrl = import.meta.env.VITE_BACKEND_URL ;
+const backendUrl = import.meta.env.VITE_BACKEND_URL;
 axios.defaults.baseURL = backendUrl;
 axios.defaults.withCredentials = true;
 
@@ -16,6 +16,7 @@ export const AuthProvider = ({ children }) => {
   const [onlineUsers, setOnlineUsers] = useState([]);
   const [socket, setSocket] = useState(null);
 
+  // ✅ Check authentication on load or token change
   const checkAuth = async () => {
     try {
       const { data } = await axios.get("/api/v1/auth/check");
@@ -24,11 +25,11 @@ export const AuthProvider = ({ children }) => {
         connectSocket(data.user);
       }
     } catch (error) {
-      console.error("Auth check failed:", error);
       toast.error("Authentication failed. Please log in again.");
     }
   };
 
+  // ✅ Handle user login
   const login = async (state, credentials) => {
     try {
       const { data } = await axios.post(`/api/v1/auth/${state}`, credentials);
@@ -43,21 +44,22 @@ export const AuthProvider = ({ children }) => {
         toast.error(data.message);
       }
     } catch (error) {
-      console.error("Login error:", error);
       toast.error(error.response?.data?.message || error.message);
     }
   };
 
+  // ✅ Handle logout
   const logout = () => {
     localStorage.removeItem("token");
     setToken(null);
     setAuthUser(null);
-    setOnlineUsers([]); // ✅ fixed typo
+    setOnlineUsers([]);
     delete axios.defaults.headers.common["Authorization"];
     if (socket) socket.disconnect();
     toast.success("Logged out successfully");
   };
 
+  // ✅ Handle profile update
   const updateProfile = async (formData) => {
     try {
       const res = await axios.put("/api/v1/auth/update-profile", formData, {
@@ -72,31 +74,24 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const connectSocket = (userData) => {
-    if (!userData || socket?.connected) return;
+  // ✅ Setup Socket.IO connection
+ const connectSocket = (userData) => {
+  if (!userData || socket?.connected) return;
 
-    const newSocket = io(backendUrl, {
-      query: { userId: userData._id },
-      transports: ["websocket"],
-    });
+  const newSocket = io(backendUrl, {
+    query: { userId: userData._id },
+    transports: ["websocket"],
+  });
 
-    newSocket.on("connect", () => {
-      console.log("✅ Socket connected:", newSocket.id);
-    });
+  newSocket.on("getOnlineUsers", (userIds) => {
+    setOnlineUsers(userIds);
+  });
 
-    newSocket.on("disconnect", () => {
-      console.log("❌ Socket disconnected");
-    });
+  setSocket(newSocket);
+};
 
-    // ✅ fixed event name
-    newSocket.on("getOnlineUsers", (userIds) => {
-      console.log("🟢 Online users from socket:", userIds);
-      setOnlineUsers(userIds);
-    });
 
-    setSocket(newSocket);
-  };
-
+  // ✅ Check token on mount or when token changes
   useEffect(() => {
     if (token) {
       axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;

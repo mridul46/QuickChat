@@ -3,6 +3,7 @@ import bcrypt from 'bcryptjs'
 import { generateToken } from "../config/generateToken.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import cloudinary from "../config/cloudinary.js";
+import streamifier from 'streamifier'
 // ..............user registration..........................
 const signup= asyncHandler(async(req,res)=>{
     const {fullName,email,password,bio} =req.body 
@@ -82,7 +83,60 @@ const  login= asyncHandler(async(req,res)=>{
     })
 }
 
- const updateProfile = asyncHandler(async (req, res) => {
+//  const updateProfile = asyncHandler(async (req, res) => {
+//   if (!req.user) {
+//     return res.status(401).json({
+//       success: false,
+//       message: "Unauthorized. Please log in again.",
+//     });
+//   }
+
+//   const userId = req.user._id;
+//   const { bio, fullName } = req.body;
+//   const profilePic = req.file?.path || null; 
+//   let updatedFields = {};
+//   if (bio) updatedFields.bio = bio;
+//   if (fullName) updatedFields.fullName = fullName;
+
+//   try {
+//     if (profilePic) {
+//       const uploadResponse = await cloudinary.uploader.upload(profilePic, {
+//         folder: "user_profiles",
+//         resource_type: "image",
+//       });
+//       updatedFields.profilePic = uploadResponse.secure_url;
+//       console.log("profilePic :",updatedFields.profilePic)
+//     }
+    
+//     const updatedUser = await User.findByIdAndUpdate(
+//       userId,
+//       updatedFields,
+//       { new: true, runValidators: true }
+//     );
+
+//     if (!updatedUser) {
+//       return res.status(404).json({
+//         success: false,
+//         message: "User not found",
+//       });
+//     }
+
+//     return res.status(200).json({
+//       success: true,
+//       user: updatedUser,
+//       message: "Profile updated successfully",
+//     });
+//   } catch (error) {
+//     console.error("Error updating profile:", error);
+//     return res.status(500).json({
+//       success: false,
+//       message: "Server error while updating profile",
+//       error: error.message,
+//     });
+//   }
+// });
+
+const updateProfile = asyncHandler(async (req, res) => {
   if (!req.user) {
     return res.status(401).json({
       success: false,
@@ -92,26 +146,41 @@ const  login= asyncHandler(async(req,res)=>{
 
   const userId = req.user._id;
   const { bio, fullName } = req.body;
-  const profilePic = req.file?.path || null; 
+  const fileBuffer = req.file?.buffer || null; // ✅ get file buffer (since using memoryStorage)
 
   let updatedFields = {};
   if (bio) updatedFields.bio = bio;
   if (fullName) updatedFields.fullName = fullName;
 
   try {
-    if (profilePic) {
-      const uploadResponse = await cloudinary.uploader.upload(profilePic, {
-        folder: "user_profiles",
-        resource_type: "image",
-      });
+    // ✅ If an image was uploaded, send it to Cloudinary via upload_stream
+    if (fileBuffer) {
+      const uploadFromBuffer = (buffer) => {
+        return new Promise((resolve, reject) => {
+          const stream = cloudinary.uploader.upload_stream(
+            {
+              folder: "user_profiles",
+              resource_type: "image",
+            },
+            (error, result) => {
+              if (error) reject(error);
+              else resolve(result);
+            }
+          );
+          streamifier.createReadStream(buffer).pipe(stream);
+        });
+      };
+
+      const uploadResponse = await uploadFromBuffer(fileBuffer);
       updatedFields.profilePic = uploadResponse.secure_url;
+     // console.log("✅ Uploaded profilePic:", updatedFields.profilePic);
     }
 
-    const updatedUser = await User.findByIdAndUpdate(
-      userId,
-      updatedFields,
-      { new: true, runValidators: true }
-    );
+    // ✅ Update user in MongoDB
+    const updatedUser = await User.findByIdAndUpdate(userId, updatedFields, {
+      new: true,
+      runValidators: true,
+    });
 
     if (!updatedUser) {
       return res.status(404).json({
@@ -126,7 +195,7 @@ const  login= asyncHandler(async(req,res)=>{
       message: "Profile updated successfully",
     });
   } catch (error) {
-    console.error("Error updating profile:", error);
+    console.error("❌ Error updating profile:", error);
     return res.status(500).json({
       success: false,
       message: "Server error while updating profile",
@@ -134,7 +203,6 @@ const  login= asyncHandler(async(req,res)=>{
     });
   }
 });
-
 
 
 const logout = asyncHandler(async (req, res) => {
