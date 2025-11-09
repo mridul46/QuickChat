@@ -82,8 +82,7 @@ const  login= asyncHandler(async(req,res)=>{
     })
 }
 
-
-const updateProfile = asyncHandler(async (req, res) => {
+ const updateProfile = asyncHandler(async (req, res) => {
   if (!req.user) {
     return res.status(401).json({
       success: false,
@@ -137,6 +136,7 @@ const updateProfile = asyncHandler(async (req, res) => {
 });
 
 
+
 const logout = asyncHandler(async (req, res) => {
 
   return res.status(200).json({
@@ -148,8 +148,8 @@ export{
    signup,
     login,
     checkAuth,
-    updateProfile,
-     logout,
+   updateProfile,
+   logout,
 }
 
 

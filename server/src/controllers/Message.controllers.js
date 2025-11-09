@@ -3,6 +3,7 @@ import Message from "../models/Message.models.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { io, userSocketMap } from "../../server.js";
 import User from "../models/User.models.js";
+import cloudinary from "../config/cloudinary.js";
 
 //Get all users except the logged in user
 const getUsersForSidebar= asyncHandler(async(req,res)=>{
@@ -12,24 +13,25 @@ const getUsersForSidebar= asyncHandler(async(req,res)=>{
      }).select("-password")
 
      //Count number of message not seen
-     const unseenMessage={}
+     const unseenMessages={}
      const promises=filteredUsers.map(async(user)=>{
         const message=await Message.find({
             senderId:user._id,
-            recieverId:userId,
+            receiverId:userId,
             seen:false
         })
         if(message.length>0){
-            unseenMessage[user._id]= message.length
+            unseenMessages[user._id]= message.length
         }
-        await Promise.all(promises)
+        
+     })
+     await Promise.all(promises)
 
         res.json({
             success:true,
             users:filteredUsers,
-            unseenMessage
+            unseenMessages
         })
-     })
 })
 
 //Get all message for selectedUsers
@@ -40,11 +42,11 @@ const getMessages= asyncHandler(async(req,res)=>{
 
     const messages=await Message.find({
         $or:[
-            {senderId:myId,recieverId:selectedUserId},
-            {senderId:selectedUserId,recieverId:myId},
+            {senderId:myId,receiverId:selectedUserId},
+            {senderId:selectedUserId,receiverId:myId},
         ]
     })
-    await Message.updateMany({senderId:selectedUserId,recieverId:myId},
+    await Message.updateMany({senderId:selectedUserId,receiverId:myId},
         {seen:true}
     );
     res.json({
@@ -66,33 +68,51 @@ const markMessageAsSeen= asyncHandler(async(req,res)=>{
 
 //send message to selectedUser
 
-const sendMessage= asyncHandler(async(req,res)=>{
-    const {text}=req.body;
-     const image = req.file?.path || null; 
-      let imageUrl;
-     if (image) {
-           const uploadResponse = await cloudinary.uploader.upload(image, {
-             folder: "Gallery",
-             resource_type: "image",
-           });
-          imageUrl = uploadResponse.secure_url;
-         }
-    const newMessage = await Message.create({
-      senderId,
-      recieverId,
-      text,
-      image:imageUrl
-    } );
-    //Emit the new Message to the reciever's socket
-    const recieverSocketId= userSocketMap[recieverId]
-    if(recieverSocketId){
-        io.to(recieverSocketId).emit("newMessage",newMessage)
+const sendMessage = asyncHandler(async (req, res) => {
+  const senderId = req.user._id;
+  const { receiverId } = req.params;
+  const { text, image } = req.body;  // ✅ image now read from body, not req.file
+
+  //console.log("📩 Incoming message request:", req.params, Object.keys(req.body));
+
+  if (!receiverId) {
+    return res.status(400).json({ success: false, message: "Receiver ID missing" });
+  }
+
+  let imageUrl = null;
+
+  // ✅ Upload if the frontend sent a base64 image
+  if (image && image.startsWith("data:image")) {
+    try {
+      const uploadResponse = await cloudinary.uploader.upload(image, {
+        folder: "Gallery",
+        resource_type: "image",
+      });
+      imageUrl = uploadResponse.secure_url;
+    } catch (error) {
+      console.error("❌ Cloudinary upload error:", error.message);
+      return res.status(500).json({ success: false, message: "Image upload failed" });
     }
-    res.json({
-        success:true,
-        newMessage
-    })
-})
+  }
+
+  // ✅ Save message to DB
+  const newMessage = await Message.create({
+    senderId,
+    receiverId,
+    text,
+    image: imageUrl,
+  });
+
+  // ✅ Notify receiver in real time
+  const receiverSocketId = userSocketMap[receiverId];
+  if (receiverSocketId) {
+    io.to(receiverSocketId).emit("newMessage", newMessage);
+  }
+
+  res.status(201).json({ success: true, newMessage });
+});
+
+
 export {
     getUsersForSidebar,
     getMessages,

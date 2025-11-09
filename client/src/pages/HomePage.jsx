@@ -1,10 +1,11 @@
-import React, { useState } from 'react'
+import React, { useContext } from 'react'
 import Sidebar from '../Components/Sidebar'
 import ChatContainer from '../Components/ChatContainer'
 import RightSidebar from '../Components/RightSidebar'
+import { ChatContext } from '../context/ChatContext'
 
 const HomePage = () => {
-  const [selectedUser, setSelectedUser] = useState(false)
+  const { selectedUser, setSelectedUser } = useContext(ChatContext);
 
   return (
     <div className="w-full min-h-screen flex items-center justify-center bg-[#0B0C10]">
@@ -17,9 +18,9 @@ const HomePage = () => {
           : 'md:grid-cols-2'
         }`}
       >
-        <Sidebar selectedUser={selectedUser} setSelectedUser={setSelectedUser} />
-        <ChatContainer selectedUser={selectedUser} setSelectedUser={setSelectedUser} />
-        <RightSidebar selectedUser={selectedUser} setSelectedUser={setSelectedUser} />
+        <Sidebar />
+        <ChatContainer />
+        <RightSidebar />
       </div>
     </div>
   )

@@ -1,20 +1,21 @@
+// AuthContext.jsx
 import { createContext, useEffect, useState } from "react";
 import axios from "axios";
 import toast from "react-hot-toast";
 import { io } from "socket.io-client";
 
-const backendUrl = import.meta.env.VITE_BACKEND_URL;
+const backendUrl = import.meta.env.VITE_BACKEND_URL ;
 axios.defaults.baseURL = backendUrl;
+axios.defaults.withCredentials = true;
 
 export const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
   const [token, setToken] = useState(null);
   const [authUser, setAuthUser] = useState(null);
-  const [onlineUser, setOnlineUser] = useState([]);
+  const [onlineUsers, setOnlineUsers] = useState([]);
   const [socket, setSocket] = useState(null);
 
-  // ✅ Check authentication
   const checkAuth = async () => {
     try {
       const { data } = await axios.get("/api/v1/auth/check");
@@ -28,20 +29,15 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // ✅ Login user
   const login = async (state, credentials) => {
     try {
       const { data } = await axios.post(`/api/v1/auth/${state}`, credentials);
       if (data.success) {
         setAuthUser(data.userData);
         connectSocket(data.userData);
-
-        // Set header correctly
         axios.defaults.headers.common["Authorization"] = `Bearer ${data.token}`;
-
         setToken(data.token);
         localStorage.setItem("token", data.token);
-
         toast.success(data.message);
       } else {
         toast.error(data.message);
@@ -52,49 +48,30 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // ✅ Logout user
   const logout = () => {
     localStorage.removeItem("token");
     setToken(null);
     setAuthUser(null);
-    setOnlineUser([]);
+    setOnlineUsers([]); // ✅ fixed typo
     delete axios.defaults.headers.common["Authorization"];
-
     if (socket) socket.disconnect();
-
     toast.success("Logged out successfully");
   };
 
-  // ✅ Update user profile
-  // const updateProfile = async (body) => {
-  //   try {
-  //     const { data } = await axios.put("/api/v1/auth/update-profile", body);
-  //     if (data.success) {
-  //       setAuthUser(data.user);
-  //       toast.success("Profile updated successfully");
-  //     } else {
-  //       toast.error(data.message);
-  //     }
-  //   } catch (error) {
-  //     console.error("Profile update error:", error);
-  //     toast.error(error.response?.data?.message || error.message);
-  //   }
-  // };
   const updateProfile = async (formData) => {
-  try {
-    const res = await axios.put(`${backendUrl}/user/update-profile`, formData, {
-      headers: {
-        "Content-Type": "multipart/form-data",
-         Authorization: `Bearer ${token}`,
-      },
-    });
-    toast.success(res.data.message);
-  } catch (error) {
-    toast.error(error.response?.data?.message || "Profile update failed");
-  }
-};
+    try {
+      const res = await axios.put("/api/v1/auth/update-profile", formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      toast.success(res.data.message);
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Profile update failed");
+    }
+  };
 
-  // ✅ Connect socket
   const connectSocket = (userData) => {
     if (!userData || socket?.connected) return;
 
@@ -111,14 +88,15 @@ export const AuthProvider = ({ children }) => {
       console.log("❌ Socket disconnected");
     });
 
-    newSocket.on("getOnlineUser", (userIds) => {
-      setOnlineUser(userIds);
+    // ✅ fixed event name
+    newSocket.on("getOnlineUsers", (userIds) => {
+      console.log("🟢 Online users from socket:", userIds);
+      setOnlineUsers(userIds);
     });
 
     setSocket(newSocket);
   };
 
-  // ✅ Sync token & check authentication
   useEffect(() => {
     if (token) {
       axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
@@ -126,11 +104,10 @@ export const AuthProvider = ({ children }) => {
     }
   }, [token]);
 
-  // ✅ Provide context value
   const value = {
     axios,
     authUser,
-    onlineUser,
+    onlineUsers,
     socket,
     login,
     logout,

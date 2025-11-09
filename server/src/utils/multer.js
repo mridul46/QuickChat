@@ -1,3 +1,5 @@
 import multer from "multer";
-const upload = multer({ dest: "uploads/" }); // ✅ now req.file.path exists
+const storage = multer.memoryStorage();
+const upload = multer({ storage });
 export default upload;
+
