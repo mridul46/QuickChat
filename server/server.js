@@ -46,7 +46,11 @@ io.on("connection",(socket)=>{
 // Middleware setup
 app.use(express.json({ limit: "4mb" }));
 app.use(cors({
-  origin: "http://localhost:5173",
+  origin: [
+    "http://localhost:5173",              // for local development
+    "https://quick-chat-bay-six.vercel.app" // for deployed frontend
+  ],
+  
   credentials: true,
 }));
 
