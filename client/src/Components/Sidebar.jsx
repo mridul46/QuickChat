@@ -7,6 +7,7 @@ import { ChatContext } from "../context/ChatContext";
 const Sidebar = () => {
   const { getUsers, users, selectedUser, setSelectedUser, unseenMessages, setUnseenMessages } =
     useContext(ChatContext);
+
   const { logout, onlineUsers } = useContext(AuthContext);
 
   const [input, setInput] = useState("");
@@ -103,11 +104,17 @@ const Sidebar = () => {
               />
               <div className="flex flex-col leading-5">
                 <p>{user.fullName || "Unnamed User"}</p>
-                {onlineUsers?.includes(user._id) ? (
+                {/* {onlineUsers?.includes(user._id) ? (
                   <span className="text-green-400 text-xs">Online</span>
                 ) : (
                   <span className="text-gray-400 text-xs">Offline</span>
-                )}
+                )} */}
+                {onlineUsers?.map(String).includes(String(user._id)) ? (
+                   <span className="text-green-400 text-xs">Online</span>
+                 ) : (
+                   <span className="text-gray-400 text-xs">Offline</span>
+                 )}
+
               </div>
               {unseenMessages?.[user._id] > 0 && (
                 <p className="absolute top-4 right-4 text-xs h-5 w-5 flex justify-center items-center rounded-full bg-violet-500/50">

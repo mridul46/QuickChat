@@ -1,4 +1,4 @@
-
+// AuthContext.jsx
 import { createContext, useEffect, useState } from "react";
 import axios from "axios";
 import toast from "react-hot-toast";
@@ -11,7 +11,7 @@ axios.defaults.withCredentials = true;
 export const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
-  const [token, setToken] = useState(null);
+ const [token, setToken] = useState(() => localStorage.getItem("token") || null);
   const [authUser, setAuthUser] = useState(null);
   const [onlineUsers, setOnlineUsers] = useState([]);
   const [socket, setSocket] = useState(null);
@@ -74,22 +74,22 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // ✅ Setup Socket.IO connection
- const connectSocket = (userData) => {
-  if (!userData || socket?.connected) return;
+//  ✅ Setup Socket.IO connection
+  const connectSocket = (userData) => {
+    if (!userData || socket?.connected) return;
 
-  const newSocket = io(backendUrl, {
-    query: { userId: userData._id },
-    transports: ["websocket"],
-  });
+    const newSocket = io(backendUrl, {
+      query: { userId: userData._id },
+      transports: ["websocket"],
+    });
 
-  newSocket.on("getOnlineUsers", (userIds) => {
-    setOnlineUsers(userIds);
-  });
+    newSocket.on("getOnlineUsers", (userIds) => {
+      setOnlineUsers(userIds.map(String));
+    });
 
-  setSocket(newSocket);
-};
-
+    setSocket(newSocket);
+  };
+  
 
   // ✅ Check token on mount or when token changes
   useEffect(() => {
