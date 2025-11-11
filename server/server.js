@@ -63,7 +63,7 @@ app.use("/api/v1/messages",messageRouter)
 // Connect MongoDB
 await connectDB();
 
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || "https://quick-chat-red-rho.vercel.app";
  server.listen(PORT, () => {
     console.log(`✅ Server is running on port: ${PORT}`);
  })
