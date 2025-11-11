@@ -1,55 +1,79 @@
-import express from "express";
-import "dotenv/config";
-import cors from "cors";
-import http from "http";
-import connectDB from "./src/config/db.js";
-import userRouter from "./src/routes/user.routes.js";
-import healthCheckRouter from "./src/routes/healthCheck.routes.js";
-import messageRouter from "./src/routes/message.routes.js";
-import { Server } from "socket.io";
+import express from 'express'
+import "dotenv/config"
+import cors from 'cors'
+import http from 'http'
+import connectDB from './src/config/db.js'
+import userRouter from './src/routes/user.routes.js'
+import healthCheckRouter from './src/routes/healthCheck.routes.js'
+import messageRouter from './src/routes/message.routes.js'
+import { Server } from 'socket.io'
+// Create Express app and http server
+const app = express()
+const server = http.createServer(app)
 
-const app = express();
-const server = http.createServer(app);
+
+//Initialize socket.io server
+const allowedOrigins = [
+  "https://quick-chat-red-rho.vercel.app",
+  "http://localhost:5173"
+];
+
+
 
 export const io = new Server(server, {
   cors: {
-    origin: [
-      "https://quick-chat-bay-six.vercel.app",
-      "http://localhost:5173"
-    ],
+    origin: allowedOrigins,
     methods: ["GET", "POST"],
     credentials: true,
   },
 });
 
-export const userSocketMap = {};
 
-io.on("connection", (socket) => {
-  const userId = socket.handshake.query.userId;
-  if (userId) userSocketMap[userId] = socket.id;
-  io.emit("getOnlineUsers", Object.keys(userSocketMap));
+//store online Users
+export const userSocketMap={};  //{userId:socketId}
+//socket.io connection handler
+io.on("connection",(socket)=>{
+    const userId=socket.handshake.query.userId
+   // console.log("User Connected",userId)
 
-  socket.on("disconnect", () => {
-    delete userSocketMap[userId];
-    io.emit("getOnlineUsers", Object.keys(userSocketMap));
-  });
-});
+    if(userId){
+        userSocketMap[userId]=socket.id
+    }
 
+    //Emit online users to all connected clients
+    io.emit("getOnlineUsers",Object.keys(userSocketMap))
+
+    socket.on("disconnect",()=>{
+     //   console.log("User disconnected","userId")
+        delete userSocketMap[userId]
+        io.emit("getOnlineUsers",Object.keys(userSocketMap))
+    })   
+})
+
+
+
+
+
+// Middleware setup
 app.use(express.json({ limit: "4mb" }));
 app.use(cors({
-  origin: [
-    "https://quick-chat-bay-six.vercel.app",
-    "http://localhost:5173"
-  ],
+  origin: allowedOrigins,
   credentials: true,
 }));
 
-app.use("/api/v1/healthcheck", healthCheckRouter);
-app.use("/api/v1/status", (req, res) => res.send("Server is live"));
-app.use("/api/v1/auth", userRouter);
-app.use("/api/v1/messages", messageRouter);
 
+// Routes setup
+app.use("/api/v1/healthcheck", healthCheckRouter); 
+app.use("/api/v1/status", (req, res) => {
+    res.send("Server is live");
+});
+app.use("/api/v1/auth", userRouter);
+app.use("/api/v1/messages",messageRouter)
+
+// Connect MongoDB
 await connectDB();
 
 const PORT = process.env.PORT || 5000;
-server.listen(PORT, () => console.log(`✅ Server running on port: ${PORT}`));
+ server.listen(PORT, () => {
+    console.log(`✅ Server is running on port: ${PORT}`);
+ })
